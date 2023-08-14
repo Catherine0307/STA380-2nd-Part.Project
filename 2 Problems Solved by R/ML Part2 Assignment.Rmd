@@ -1,0 +1,314 @@
+---
+title: "ML_Assignment_STA380_jgscott"
+author: "Aditya Kumar, Barnana Ganguly ,Zihao Zhu, Nawen Deng"
+date: "2023-08-14"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+## Market Segmentation 
+### (a) Data Pre-Proccessing 
+
+For the purpose of improving the significance of our market segmentation, I removed the following four categories: chatter, adult, spam, and uncategorized. Given that "adult" and "spam" categories are intended for content filtering due to their inappropriate nature, and "uncategorized" and "chatter" lack specific significance, I have excluded these four columns from the dataset.
+
+```{r, ECHO=FALSE}
+social_market = read.csv('https://raw.githubusercontent.com/jgscott/STA380/master/data/social_marketing.csv')
+attach(social_market)
+
+discard<-c('spam','adult','uncategorized','chatter')
+social_market<-social_market[,!names(social_market)%in%discard]
+
+# Calculate the correlation matrix
+numeric_columns <- sapply(social_market, is.numeric)
+correlation_matrix <- cor(social_market[, numeric_columns])
+
+# Plot the correlation matrix as a heatmap
+library(corrplot)
+
+# Create a correlation matrix heatmap
+corrplot(correlation_matrix, method = "color", type = "lower", tl.cex = 0.6, tl.col = "black", col = colorRampPalette(c("white", "darkblue"))(100))
+
+```
+
+There are several intutiative significant correlation between:
+college_uni and online gaming/ sports playing
+shopping and photosharing
+outdoor and health nutrition
+beauty and fashion
+personal fitness and health nutrition/outdoors
+religion and parenting/school
+
+There are also some unexpected significant correlation between:
+politics and travel
+religion and food/sports_fandom
+parenting and sports_fandom
+fashion and cooking
+
+Due to the limited distinguishing capacity of certain frequently occurring terms such as photo-sharing, I employed TF-IDF to reassess the significance of each term for each follower. TF, denoting term-frequency, quantifies the occurrence frequency of a term in a follower's tweets, giving greater importance to terms that appear more frequently. IDF, or inverse-document-frequency, gauges a term's occurrence across the entire dataset, reducing its significance for individual followers when it is more commonly present across the dataset
+
+```{r, ECHO=FALSE}
+# TF-IDF Calculation
+TF<-social_market[,-1]/rowSums(social_market[,-1])
+tmp=sort(apply(TF,2,mean),decreasing=TRUE)
+EXI_NUM<-apply(social_market[,-1]>0,2,function(x){table(x)['TRUE']})
+IDF<-as.numeric(log(nrow(social_market)/EXI_NUM))
+TFIDF = data.frame(t(t(TF)*IDF))
+```
+
+I utilize the 'cosine' metric to assess similarity, which computes the cosine value of the angle between two vectors. This approach evaluates divergence in direction rather than magnitude. For instance, with followers A, B, and C having attributes like A={'travelling':10,'cooking':5}, B={'travelling':20,'cooking':10}, C={'travelling':10,'cooking':12}, I would perceive A as more similar to B than to C, despite A and C being 'nearer' in terms of values.
+
+### (b)  Define Market Segment 
+I will define a "market segment" as a cluster of correlated interests. I chose this because of the way data was collected i.e., categorizing by themes which entails commonality and would be efficient to identify their clusters
+
+```{r hclust, echo=FALSE}
+library(proxy)
+d.cosine <- proxy::dist(as.matrix(TFIDF), method = "cosine")
+hc.ratio.cosine <- hclust(d.cosine, method = 'ward.D2')
+```
+
+After evaluating various results across different values of K (using elbow graph), I opted for k=5 as our final parameter, as its outcome aligns more logically with our interpretation.
+
+```{r cluster 5, echo=FALSE}
+# Load required libraries
+library(ggplot2)
+library(RColorBrewer)
+
+# Replace the number of clusters
+out.cluster = cutree(hc.ratio.cosine, k = 5)
+TFIDF$cluster = out.cluster
+
+tfidf <- c()
+names <- c()
+for (j in 1:5) {
+  cate <- sort(apply(TFIDF[TFIDF$cluster == j, -ncol(TFIDF)], 2, mean), decreasing = TRUE)[1:5]
+  name <- names(cate)
+  tfidf <- c(tfidf, unname(cate))
+  names <- c(names, name)
+}
+
+cate.df <- data.frame(
+  names = names,
+  tfidf_scores = tfidf,
+  cluster = rep(letters[1:5], each = length(tfidf) / 5)
+)
+cate.df$names <- factor(cate.df$names, levels = unique(cate.df$names))
+
+colourCount <- length(unique(cate.df$names))
+getPalette <- colorRampPalette(brewer.pal(8, "Set2"))
+
+# Create the bar plot
+ggplot(cate.df, aes(x = cluster, y = tfidf_scores, fill = names)) +
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
+  scale_fill_manual(values = getPalette(colourCount)) +
+  labs(x = "Cluster", y = "TF-IDF Score", title = "Top 5 Names for Each Cluster")
+
+
+```
+**Top 5 Names per Cluster:**
+
+```{r, echo=FALSE}
+library(pander)
+
+# Create a data frame with names for each cluster
+names_df <- data.frame(
+  'A' = cate.df$names[cate.df$cluster == 'a'],
+  'B' = cate.df$names[cate.df$cluster == 'b'],
+  'C' = cate.df$names[cate.df$cluster == 'c'],
+  'D' = cate.df$names[cate.df$cluster == 'd'],
+  'E' = cate.df$names[cate.df$cluster == 'e']
+)
+
+# Print the data frame using pander
+pander(names_df)
+
+```
+Based on the topics with notable TFIDF scores within the clusters, I can deduce that the initial cluster signifies individuals with a strong emphasis on health and nutrition, likely well-educated individuals and homemakers; the second cluster encapsulates adults with religion specific inclination who are also interested in shopping and other modern practises; the third cluster embodies college/high school students; and the fourth cluster reflects those concerned with contemporary affairs, predominantly working individuals and fifth cluster captures female population who are interested in cooking, fashion, and beauty.
+
+
+### (c) Marketing Strategy for Each Group:
+
+*Cluster 1*: With an emphasis on health and nutrition, this group is potentially the fitness enthusiasts and could benefit from the company sharing nutritious cooking recipes that highlight their products. Companies can collaborate with the renowned chefs to promote their products more organically.
+
+*Cluster 2*: With specially crafted social media efforts, this demographic, which is distinguished by its religious propensity and curiosity in contemporary activities, could be attracted. Their religious beliefs and current fashion trends might be combined to produce a novel marketing strategy.
+
+*Cluster 3*: This segment comprises of young audience and getting college/high school students interested demands a novel strategy. To grab and hold their interest, the business should establish engrossing social media campaigns with interactive gaming components and marketing offers.
+
+*Cluster 4*: Working class people who make up the majority of the cluster with contemporary affairs interests could be attracted to them by strategically sponsoring social activities and perhaps making pertinent political contributions. This would result in more coverage in media outlets including newspapers, television, and news websites, successfully grabbing the interest of this audience.
+
+*Cluster 5*: This audience, which is mostly made up of women (maybe housewives) interested in food, clothing, and beauty, offers an opportunity for interesting content. The business may concentrate on giving them useful material that relates to their interests, possibly working with influencers from these fields to increase interaction.
+
+
+## Association Rule Mining 
+### (a) Data Pre-Proccessing 
+```{r groceries init, warning=FALSE, message=FALSE, include=FALSE}
+#detach(package:tm, unload=TRUE)
+library(arules)  
+library(reshape)
+library(arulesViz)
+library(dplyr)
+library(pander)
+
+# Read in groceries from file
+groceries_raw <- read.table("https://raw.githubusercontent.com/jgscott/STA380/master/data/groceries.txt",
+                            header = FALSE, sep = ",", col.names = paste0("V",seq_len(32)), fill = TRUE)
+summary(groceries_raw)
+```
+
+```{r, echo=FALSE}
+# Create User
+groceries_raw$user <- seq.int(nrow(groceries_raw))
+
+# Melt column into one row
+groceries_reshaped <- reshape2::melt(groceries_raw, id = c("user"))
+
+# Remove column 'Variable'
+groceries_reshaped <- groceries_reshaped[, -c(2)]
+
+# Sorting
+groceries_reshaped2 <- groceries_reshaped[order(groceries_reshaped$user),]
+
+# Remove all blank values 
+groceries_reshaped3 <- groceries_reshaped2[!is.na(groceries_reshaped2$value) & groceries_reshaped2$value != "", ]
+
+# Make user a factor
+groceries_reshaped3$user <- factor(groceries_reshaped3$user)
+
+# Remove row names
+rownames(groceries_reshaped3) <- NULL
+
+# Print the first few rows of the reshaped data
+print(head(groceries_reshaped3))
+```
+The table above shows the head of transaction dataframe before splitting it by transactions.  
+
+```{r top 10 items, echo=FALSE}
+
+# Barplot of Top 10 Grocery Items
+
+# Calculate the frequency of each grocery item
+item_frequencies <- table(groceries_reshaped3$value)
+# View(item_frequencies)
+
+# Sort the frequencies in descending order
+sorted_frequencies <- sort(item_frequencies, decreasing = TRUE)
+
+# Select the top 10 items
+top_10 <- head(sorted_frequencies, 10)
+top_10
+
+#Create a bar plot for the top 10 items
+barplot(top_10, las = 2, cex.names = 0.6,
+        xlab = "Item",
+        ylab = "Count",
+        main = "Top 10 Grocery Items (by frequency)",
+        col = 'darkgreen',
+        ylim = c(0, max(top_10) + 500))
+```
+### (b) Apriori Algorithm implementation
+Specifically *formatted lists of baskets* are required by the Apriori Algorithm. In this case, one "transaction" of items per person
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+# First split data into a list of items for each user
+groceries <- split(x=groceries_reshaped3$value, f=groceries_reshaped3$user)
+paste("Total no. of transactions are: ",length(groceries))
+```
+
+```{r, include=FALSE}
+## Remove duplicates from each transaction in the groceries list to ensure each item appears once in each transaction
+groceries <- lapply(groceries, unique)
+#View(groceries)
+
+## Convert groceries list into the special "transactions" class provided by the arules package
+groceriestrans <- as(groceries, "transactions")
+
+# Create a list of possible values for support and confidence
+sup = seq(0.009,0.05,by=0.01)
+con = seq(0.2,0.5,by=0.05)
+parmb = expand.grid(sup,con)
+colnames(parmb) = c('sup','con')
+nset = nrow(parmb)
+avg_inspection = rep(0,nset)
+
+# Run a loop to find the optimum value of support and confidence to maximize lift
+for(i in 1:nset) {
+  groceryrules <- apriori(groceriestrans, parameter = list(support = parmb[i, 1], confidence = parmb[i, 2], maxlen = 5))
+  inspection = inspect(groceryrules)
+  inspection$lift <- as.numeric(inspection$lift)
+  avg_inspection[i] = mean(inspection$lift)
+}
+print(groceryrules)
+
+# print(cbind(parmb, avg_inspection))
+# avg_inspection
+
+```
+
+I wanted to find interesting patterns in the grocery purchase data. I tested different combinations of "support" and "confidence" values. I think of support as a measure of how often a certain combination of items appears together in all the shopping transactions. Confidence measures how likely one item is to be bought if another item is already in the basket.
+My goal was to find a combination of support and confidence values that gave the highest "average lift." Lift means how much more likely items are to be bought together than if they were bought independently. In simple terms, high lift values suggest a strong connection between items.
+
+I tested different support values from 0.009 to 0.05 and confidence values from 0.2 to 0.5. I wanted to find the values that provided the highest lift, indicating a strong connection between items in the shopping baskets. The results showed that the best combination was a support of 0.009 and a confidence of 0.5, with an average lift of 2.2255.
+However, there's a trade-off: if you increase support, you capture more transactions, but the lift might decrease, showing a weaker connection between items. I decided to balance these factors by choosing a slightly higher support of 0.01 and a slightly lower confidence of 0.4. This balance allowed for more transactions while still maintaining a reasonable lift value.
+
+```{r,message=FALSE, warning=FALSE, include=FALSE}
+# Generate association rules using specified parameters
+
+groceryrules_final1 <- apriori(groceriestrans, parameter = list(support = 0.01, confidence = 0.4, maxlen = 5))
+inspect(groceryrules_final1)
+
+# Sort and filter the rules based on lift
+sorted_rules <- inspect(subset(groceryrules_final1, subset = lift > 2))
+print(sorted_rules)
+
+
+# summary(groceryrules_final1)
+
+```
+Now, I ran the association rule model using specific support and confidence values. Then, from the results, I selected rules with a lift greater than 2, as the average lift was close to 2. This resulted in 29 strong rules of association.
+Among these rules, the most common item purchased was "whole milk," followed by "other vegetables." This suggests that many people across different shopping baskets are consistently interested in buying whole milk and/or other vegetables.
+
+
+```{r, include=FALSE}
+# Subset the association rules based on lift
+subset_groc = (subset(groceryrules_final1, subset=lift > 2))
+subset_groc
+
+```
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+
+library(arulesViz)
+
+# Visualize association rules using a graph
+plot(subset_groc, method = "graph", control = list(type = "items", col= 'darkgreen'))
+
+# Scatter plot between confidence and support
+plot(groceryrules_final1, shading = "order", control = list(main = "Two-key plot", col= 'darkgreen'))
+
+# Matrix based visualization
+plot(subset_groc, method = "matrix", measure = "support", control= list(col='darkgreen')) 
+
+# Sample and visualize a subset of rules
+subrules <- sample(subset_groc, 20)
+# Use "drl" layout for better illustration
+plot(subrules, method = "graph", control = list(layout = "circle",col='darkgreen'))
+```
+The visualizations above gives us the strength f the associations. The first graph illustrates the relative value of the different basket elements. With branches stretching forth to other products, the center section contains whole milk and other veggies that used to be the most popular.
+
+The next one provides a two-key plot for the entire set of values as a function of support and confidence, not only for the subset.
+
+The 3rd graph is a matrix representation of the rule matrix, with the lift indicated by a color scale. These can be matched to the lift values mentioned above, giving me the precise basket contents. 
+
+## (c) Choice of parameters
+
+Higher degrees of support provided too few rules for us to examine, so I went with support= 0.009 instead. Because I want to ensure that item on LHS will also appear if item on RHS appears, I set confidence = 0.5. This solely takes into account how well-liked goods on RHS are, not those on LHS. There is a higher likelihood that things on the RHS will contain items on the LHS if items on the rhs appear frequently overall. 
+
+I choose our final itemlists based on lift since lift gauges the likelihood that an item on LHS will be bought when an item on RHS is bought in order to account for this bias. The maximum average lift for these selected values of support and lift is 2.2255. Therefore, I sorted the items by lift and rank the top 20 rules, which is the result generated by the algorithm.
+
+## (d) Recommendation
+
+This data-driven analysis provides invaluable insights for store managers responsible for perishable inventory management. It also holds significance for optimizing product placement tactics. By grouping frequently co-purchased items on the same shelf or aisle, retailers can enhance customer convenience and drive supplementary purchases, leading to heightened sales and improved customer satisfaction.
