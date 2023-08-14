@@ -1,7 +1,6 @@
 # STA 380, Part 2: Exercises 
 # http://localhost:8890/notebooks/Desktop/ML%20Assignment-7Q.ipynb#
 ## Aditya Kumar, Barnana Ganguly ,Zihao Zhu, Nawen Deng
-### Github distorts the python code if all 7 questions are combined together. Therefore, we upload them seperately in this folder. Plese check the google drive link above for entire python work.
 #### Q1. Probability practice (Python)
 #### Q2. Wrangling the Billboard Top 100 (Python)
 #### Q3. Visual story telling part 1: green buildings (Python)
