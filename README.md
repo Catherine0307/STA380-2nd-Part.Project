@@ -1,4 +1,5 @@
 # STA 380, Part 2: Exercises 
+# http://localhost:8890/notebooks/Desktop/ML%20Assignment-7Q.ipynb#
 ## Aditya Kumar, Barnana Ganguly ,Zihao Zhu, Nawen Deng
 #### Q1. Probability practice (Python)
 #### Q2. Wrangling the Billboard Top 100 (Python)
