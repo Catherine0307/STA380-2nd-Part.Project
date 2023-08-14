@@ -7,3 +7,4 @@
 #### Q5. Clustering and dimensionality reduction (Python)
 #### Q7. The Reuters corpus (Python)
 #### Q9. Image classification with neural networks (Python)
+Github disformats the python code if all 7 questions are combined together. Therefore, we upload them seperatly in this folder. Plese check the google drive link above for entire python work. 
