@@ -1,4 +1,14 @@
 # STA 380, Part 2: Exercises 
+## Aditya Kumar, Barnana Ganguly ,Zihao Zhu, Nawen Deng
+#### Probability practice (Python)
+#### Wrangling the Billboard Top 100 (Python)
+#### Visual story telling part 1: green buildings (Python)
+#### Visual story telling part 2: Capital Metro data (Python)
+#### Clustering and dimensionality reduction (Python) 
+#### Market segmentation (R)
+#### The Reuters corpus (Python) 
+#### Association rule mining (R)
+#### Image classification with neural networks (Python)
 
 Due: by end of the working day (5:00 PM US Central time) on Monday, August 14.
 
