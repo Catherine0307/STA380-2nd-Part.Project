@@ -1,1 +1,1 @@
-## Market Segmentation + Association Rule Mining
+## This folder contains Market Segmentation & Association Rule Mining
