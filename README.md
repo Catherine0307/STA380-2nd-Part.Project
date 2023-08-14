@@ -1,7 +1,6 @@
 # STA 380, Part 2: Exercises 
 # Link for Python Notebook : http://localhost:8890/notebooks/Desktop/ML%20Assignment-7Q.ipynb#
-### Please note that the Github interface is distorting the Python notebook so use this link in case of any issues.
-All solutions in Python and R have been added to this repository as well.
+### Please note that the Github interface is distorting the Python notebook so use this link in case of any issues.All solutions in Python and R have been added to this repository as well.
 ## Aditya Kumar, Barnana Ganguly ,Zihao Zhu, Nawen Deng
 #### Q1. Probability practice (Python)
 #### Q2. Wrangling the Billboard Top 100 (Python)
