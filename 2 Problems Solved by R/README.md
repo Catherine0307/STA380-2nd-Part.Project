@@ -1,2 +1,1 @@
-## Market Segmentation
-## Association Rule Mining
+## Market Segmentation + Association Rule Mining
